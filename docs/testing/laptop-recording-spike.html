@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prueba de grabacion offline en laptop</title>
+  <style>
+    :root { color-scheme: light; --ink: #18241f; --muted: #5e7066; --line: #ccd8d1; --paper: #f4f7f3; --green: #176b4a; --red: #a53e32; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+    main { width: min(860px, calc(100% - 32px)); margin: 32px auto; }
+    h1 { margin: 0 0 8px; font-size: 1.8rem; }
+    p { color: var(--muted); }
+    section { margin: 20px 0; padding: 18px; border: 1px solid var(--line); background: #fff; }
+    .notice { border-left: 4px solid #d09729; }
+    .status { font-size: 1.15rem; font-weight: 700; }
+    .status[data-state="recording"] { color: var(--red); }
+    .status[data-state="ready"] { color: var(--green); }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; }
+    button { min-height: 42px; padding: 8px 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
+    button.primary { background: var(--green); border-color: var(--green); color: #fff; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    dl { display: grid; grid-template-columns: minmax(170px, 1fr) 2fr; gap: 6px 14px; margin: 12px 0 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    ol { padding-left: 22px; }
+    li { margin: 5px 0; }
+    #log { max-height: 260px; overflow: auto; padding-left: 22px; font: 13px/1.45 ui-monospace, monospace; }
+    @media (max-width: 560px) { dl { grid-template-columns: 1fr; gap: 0; } dd { margin-bottom: 8px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Prueba de grabacion offline en laptop</h1>
+  <p>Registra soporte de navegador, fragmentos y eventos para evaluar sesiones largas. El audio no se guarda ni se envia: solo se cuentan bytes y fragmentos.</p>
+
+  <section class="notice">
+    <strong>Usa solo audio de prueba controlado.</strong>
+    <p>No grabes clientes, procesos reales ni datos personales. La prueba sirve para verificar el comportamiento tecnico del navegador; no es la grabadora de produccion.</p>
+  </section>
+
+  <section>
+    <div id="status" class="status" data-state="ready">Lista para iniciar</div>
+    <dl>
+      <dt>Tiempo grabado</dt><dd id="elapsed">00:00:00</dd>
+      <dt>Formato elegido</dt><dd id="mime">Sin probar</dd>
+      <dt>Fragmentos recibidos</dt><dd id="chunks">0</dd>
+      <dt>Tamano acumulado</dt><dd id="bytes">0 bytes</dd>
+      <dt>Mayor intervalo entre fragmentos</dt><dd id="max-gap">0 s</dd>
+      <dt>Almacenamiento persistente</dt><dd id="persist">Sin probar</dd>
+      <dt>Screen Wake Lock</dt><dd id="wake">Sin probar</dd>
+      <dt>Espacio estimado</dt><dd id="space">Sin probar</dd>
+    </dl>
+  </section>
+
+  <section>
+    <div class="controls">
+      <button id="start" class="primary" type="button">Iniciar grabacion</button>
+      <button id="stop" type="button" disabled>Detener y cerrar sesion</button>
+      <button id="download" type="button" disabled>Descargar reporte tecnico</button>
+    </div>
+    <p>Prueba sugerida: una sesion de 60 minutos con la laptop conectada a corriente; registra cambios de pestaña, bloqueo de pantalla y, solo si es seguro, cierre de tapa/suspension. Al volver, anota si hubo huecos. No cierres esta pestana durante la grabacion.</p>
+  </section>
+
+  <section>
+    <h2>Eventos</h2>
+    <ol id="log" aria-live="polite"></ol>
+  </section>
+</main>
+<script>
+(() => {
+  const TIMESLICE_MS = 10_000;
+  const GAP_WARNING_MS = 30_000;
+  const MIME_CANDIDATES = [
+    "audio/webm;codecs=opus",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/webm"
+  ];
+  const statusEl = document.getElementById("status");
+  const elapsedEl = document.getElementById("elapsed");
+  const mimeEl = document.getElementById("mime");
+  const chunksEl = document.getElementById("chunks");
+  const bytesEl = document.getElementById("bytes");
+  const maxGapEl = document.getElementById("max-gap");
+  const persistEl = document.getElementById("persist");
+  const wakeEl = document.getElementById("wake");
+  const spaceEl = document.getElementById("space");
+  const logEl = document.getElementById("log");
+  const startButton = document.getElementById("start");
+  const stopButton = document.getElementById("stop");
+  const downloadButton = document.getElementById("download");
+
+  let stream = null;
+  let recorder = null;
+  let wakeLock = null;
+  let timer = null;
+  let startedAt = 0;
+  let elapsedBeforeStop = 0;
+  let chunkCount = 0;
+  let totalBytes = 0;
+  let lastChunkAt = 0;
+  let maxGapMs = 0;
+  let selectedMime = "";
+  let sessionReport = null;
+  let persistResult = null;
+  let wakeStatus = "not tested";
+  const events = [];
+
+  function addEvent(type, detail = "") {
+    const entry = { at: new Date().toISOString(), elapsedMs: getElapsedMs(), type, detail };
+    events.push(entry);
+    if (events.length > 800) events.shift();
+    const item = document.createElement("li");
+    item.textContent = `${entry.at} · ${type}${detail ? ` · ${detail}` : ""}`;
+    logEl.appendChild(item);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function getElapsedMs() {
+    return startedAt ? Math.max(0, performance.now() - startedAt + elapsedBeforeStop) : elapsedBeforeStop;
+  }
+
+  function formatTime(milliseconds) {
+    const seconds = Math.floor(milliseconds / 1000);
+    const hours = String(Math.floor(seconds / 3600)).padStart(2, "0");
+    const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+    const remainder = String(seconds % 60).padStart(2, "0");
+    return `${hours}:${minutes}:${remainder}`;
+  }
+
+  function updateTimer() {
+    elapsedEl.textContent = formatTime(getElapsedMs());
+  }
+
+  function updateCounts() {
+    chunksEl.textContent = String(chunkCount);
+    bytesEl.textContent = `${totalBytes.toLocaleString("es-EC")} bytes`;
+    maxGapEl.textContent = `${(maxGapMs / 1000).toFixed(1)} s`;
+  }
+
+  async function requestWakeLock() {
+    if (!("wakeLock" in navigator)) {
+      wakeStatus = "no disponible";
+      wakeEl.textContent = wakeStatus;
+      addEvent("wake-lock", wakeStatus);
+      return;
+    }
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeStatus = "adquirido";
+      wakeEl.textContent = wakeStatus;
+      addEvent("wake-lock", wakeStatus);
+      wakeLock.addEventListener("release", () => {
+        wakeStatus = "liberado por el navegador/sistema";
+        wakeEl.textContent = wakeStatus;
+        addEvent("wake-lock-release", wakeStatus);
+      }, { once: true });
+    } catch (error) {
+      wakeStatus = `no adquirido: ${error.name || "error"}`;
+      wakeEl.textContent = wakeStatus;
+      addEvent("wake-lock-error", wakeStatus);
+    }
+  }
+
+  async function resumeWakeLockIfVisible() {
+    if (recorder && recorder.state === "recording" && document.visibilityState === "visible" && !wakeLock) {
+      await requestWakeLock();
+    }
+  }
+
+  function chooseMimeType() {
+    if (!("MediaRecorder" in window)) return "";
+    return MIME_CANDIDATES.find(type => MediaRecorder.isTypeSupported(type)) || "";
+  }
+
+  async function inspectStorage() {
+    if (navigator.storage?.persist) {
+      try {
+        persistResult = await navigator.storage.persist();
+        persistEl.textContent = persistResult ? "concedido" : "denegado";
+      } catch (error) {
+        persistResult = false;
+        persistEl.textContent = `error: ${error.name || "desconocido"}`;
+      }
+    } else {
+      persistResult = null;
+      persistEl.textContent = "API no disponible";
+    }
+    if (navigator.storage?.estimate) {
+      try {
+        const estimate = await navigator.storage.estimate();
+        const free = Number.isFinite(estimate.quota) && Number.isFinite(estimate.usage)
+          ? Math.max(0, estimate.quota - estimate.usage)
+          : null;
+        spaceEl.textContent = free === null ? "no disponible" : `${(free / 1024 / 1024).toFixed(1)} MiB libres estimados`;
+      } catch (error) {
+        spaceEl.textContent = `error: ${error.name || "desconocido"}`;
+      }
+    }
+  }
+
+  async function startRecording() {
+    if (!window.isSecureContext) {
+      addEvent("error", "La pagina no esta en contexto seguro. Usa localhost o HTTPS.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || !("MediaRecorder" in window)) {
+      addEvent("error", "El navegador no ofrece getUserMedia o MediaRecorder.");
+      return;
+    }
+    try {
+      await inspectStorage();
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getAudioTracks().forEach(track => {
+        addEvent("audio-track", `label=${track.label || "oculto"}, readyState=${track.readyState}`);
+        track.addEventListener("ended", () => addEvent("track-ended", "La pista de audio termino."));
+        track.addEventListener("mute", () => addEvent("track-muted", "La pista dejo de recibir audio."));
+        track.addEventListener("unmute", () => addEvent("track-unmuted", "La pista recibio audio de nuevo."));
+      });
+      selectedMime = chooseMimeType();
+      mimeEl.textContent = selectedMime || "formato predeterminado del navegador";
+      const options = selectedMime ? { mimeType: selectedMime } : undefined;
+      recorder = new MediaRecorder(stream, options);
+      recorder.addEventListener("dataavailable", event => {
+        if (!event.data || event.data.size === 0) return;
+        const now = performance.now();
+        if (lastChunkAt) {
+          const interval = now - lastChunkAt;
+          maxGapMs = Math.max(maxGapMs, interval);
+          if (interval > GAP_WARNING_MS) addEvent("possible-gap", `intervalo de ${(interval / 1000).toFixed(1)} s entre fragmentos`);
+        }
+        lastChunkAt = now;
+        chunkCount += 1;
+        totalBytes += event.data.size;
+        updateCounts();
+      });
+      recorder.addEventListener("error", event => addEvent("recorder-error", event.error?.name || "error"));
+      recorder.addEventListener("pause", () => addEvent("recorder-pause"));
+      recorder.addEventListener("resume", () => addEvent("recorder-resume"));
+      recorder.addEventListener("stop", () => addEvent("recorder-stop"));
+      recorder.start(TIMESLICE_MS);
+      startedAt = performance.now();
+      statusEl.dataset.state = "recording";
+      statusEl.textContent = "Grabando. El audio se descarta y no se guarda.";
+      startButton.disabled = true;
+      stopButton.disabled = false;
+      downloadButton.disabled = true;
+      timer = window.setInterval(updateTimer, 1000);
+      await requestWakeLock();
+      addEvent("recording-start", `timeslice=${TIMESLICE_MS} ms; mime=${selectedMime || "default"}`);
+    } catch (error) {
+      addEvent("start-error", `${error.name || "error"}: ${error.message || "no se pudo iniciar"}`);
+      stream?.getTracks().forEach(track => track.stop());
+      stream = null;
+      recorder = null;
+    }
+  }
+
+  async function stopRecording() {
+    if (!recorder) return;
+    const activeRecorder = recorder;
+    if (activeRecorder.state !== "inactive") activeRecorder.stop();
+    if (timer) window.clearInterval(timer);
+    timer = null;
+    elapsedBeforeStop = getElapsedMs();
+    startedAt = 0;
+    updateTimer();
+    stream?.getTracks().forEach(track => track.stop());
+    stream = null;
+    if (wakeLock) {
+      try { await wakeLock.release(); } catch { /* The system may have released it already. */ }
+      wakeLock = null;
+    }
+    sessionReport = {
+      testType: "laptop-recording-spike",
+      startedAt: new Date(Date.now() - elapsedBeforeStop).toISOString(),
+      endedAt: new Date().toISOString(),
+      elapsedMs: elapsedBeforeStop,
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      secureContext: window.isSecureContext,
+      mimeType: selectedMime || activeRecorder.mimeType || "browser-default",
+      timesliceMs: TIMESLICE_MS,
+      chunkCount,
+      totalBytes,
+      maxChunkIntervalMs: maxGapMs,
+      storagePersisted: persistResult,
+      wakeLockStatus: wakeStatus,
+      events
+    };
+    recorder = null;
+    statusEl.dataset.state = "ready";
+    statusEl.textContent = "Sesion cerrada. Descarga solo el reporte tecnico; no contiene audio.";
+    startButton.disabled = false;
+    stopButton.disabled = true;
+    downloadButton.disabled = false;
+    addEvent("recording-finished", `duracion=${formatTime(elapsedBeforeStop)}, fragmentos=${chunkCount}, bytes=${totalBytes}`);
+  }
+
+  function downloadReport() {
+    if (!sessionReport) return;
+    sessionReport.events = events;
+    sessionReport.reportDownloadedAt = new Date().toISOString();
+    const blob = new Blob([JSON.stringify(sessionReport, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `laptop-recording-spike-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    addEvent("visibility", document.visibilityState);
+    if (document.visibilityState === "visible") resumeWakeLockIfVisible();
+  });
+  window.addEventListener("pagehide", () => addEvent("pagehide", "Si la sesion se interrumpe, el reporte no se conserva."));
+  window.addEventListener("pageshow", event => addEvent("pageshow", `persisted=${event.persisted}`));
+  window.addEventListener("online", () => addEvent("network", "online"));
+  window.addEventListener("offline", () => addEvent("network", "offline"));
+
+  startButton.addEventListener("click", startRecording);
+  stopButton.addEventListener("click", stopRecording);
+  downloadButton.addEventListener("click", downloadReport);
+})();
+</script>
+</body>
+</html>

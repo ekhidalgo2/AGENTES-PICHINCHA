@@ -1,0 +1,701 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AnalystProfile {
+  diagrammer
+  domain_specialist
+}
+
+enum ComplexityLevel {
+  simple
+  medium
+  complex
+}
+
+enum DataOrigin {
+  internal
+  simulated
+  client_authorized
+}
+
+enum RecordingOrigin {
+  pwa_laptop
+  phone_external
+  other_external
+}
+
+enum OrganizationMemberRole {
+  org_admin
+  member
+}
+
+enum ProjectMemberRole {
+  project_admin
+  analyst
+}
+
+enum DevicePurpose {
+  capture
+  transcription
+}
+
+enum ConsentPurpose {
+  recording
+  transcription
+  ai_processing
+}
+
+enum EvidencePhase {
+  pre_session
+  session
+  post_session
+}
+
+enum ReviewStatus {
+  proposed
+  confirmed
+  pending
+}
+
+model Organization {
+  id                    String                 @id @default(cuid())
+  name                  String
+  verifiedDomain        String?
+  requireDiagramReview  Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  members               OrganizationMember[]
+  projectMembers        ProjectMember[]
+  projects              Project[]
+  devices               Device[]
+  deviceAttestations    DeviceAttestation[]
+  byodAgreements        ByodAgreement[]
+  apqcCategories        APQCCategory[]
+  subprocesses          Subprocess[]
+  processActivities     ProcessActivity[]
+  interviews            Interview[]
+  interviewParticipants InterviewParticipant[]
+  consentRecords        ConsentRecord[]
+  clientAuthorizations  ClientAuthorization[]
+  recordingSessions     RecordingSession[]
+  recordingGaps         RecordingGap[]
+  evidence              Evidence[]
+  uploadJobs            UploadJob[]
+  structuredNotes       StructuredNote[]
+  processDrafts         ProcessDraft[]
+  draftRevisions        DraftRevision[]
+  editLeases            EditLease[]
+  diagrams              Diagram[]
+  diagramRevisions      DiagramRevision[]
+  diagramReviews        DiagramReview[]
+  verificationRuns      VerificationRun[]
+  approvalAttachments   ApprovalAttachment[]
+  aiJobs                AIJob[]
+  deletionRequests      DeletionRequest[]
+  excelTemplates        ExcelTemplate[]
+  templateMappings      TemplateMapping[]
+  interviewGuides       InterviewGuide[]
+  guideVersions         GuideVersion[]
+  auditEvents           AuditEvent[]
+  usageEvents           UsageEvent[]
+  pilotMeasurements     PilotMeasurement[]
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  email              String               @unique
+  displayName        String
+  analystProfile     AnalystProfile
+  isDiagramReviewer  Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  organizations      OrganizationMember[]
+  projectMemberships ProjectMember[]
+  assignedInterviews Interview[]          @relation("AssignedAnalyst")
+  devices            Device[]
+  byodAgreements     ByodAgreement[]
+  editLeases         EditLease[]
+  diagramReviews     DiagramReview[]
+  auditEvents        AuditEvent[]
+}
+
+model OrganizationMember {
+  id             String                 @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrganizationMemberRole @default(member)
+  createdAt      DateTime               @default(now())
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, role])
+}
+
+model APQCCategory {
+  id             String       @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  level          Int
+  source         String
+  version        String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]
+
+  @@unique([organizationId, source, version, code])
+  @@index([organizationId, level])
+}
+
+model Project {
+  id                       String               @id @default(cuid())
+  organizationId           String
+  name                     String
+  description              String?
+  dataOrigin               DataOrigin
+  complexityInitial        ComplexityLevel
+  complexityFinal          ComplexityLevel
+  complexityOverrideReason String?
+  apqcCategoryId           String?
+  apqcLevel                Int?
+  industry                 String
+  clientSize               String?
+  benchmarkingConsent      Boolean              @default(false)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  organization             Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  apqcCategory             APQCCategory?        @relation(fields: [apqcCategoryId], references: [id], onDelete: SetNull)
+  members                  ProjectMember[]
+  subprocesses             Subprocess[]
+  activities               ProcessActivity[]
+  interviews               Interview[]
+  clientAuthorization      ClientAuthorization?
+  recordingSessions        RecordingSession[]
+  evidence                 Evidence[]
+  structuredNotes          StructuredNote[]
+  processDrafts            ProcessDraft[]
+  editLeases               EditLease[]
+  diagrams                 Diagram[]
+  verificationRuns         VerificationRun[]
+  approvalAttachments      ApprovalAttachment[]
+  aiJobs                   AIJob[]
+  deletionRequests         DeletionRequest[]
+  auditEvents              AuditEvent[]
+  usageEvents              UsageEvent[]
+  pilotMeasurements        PilotMeasurement[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, dataOrigin])
+}
+
+model ProjectMember {
+  id             String            @id @default(cuid())
+  organizationId String
+  projectId      String
+  userId         String
+  role           ProjectMemberRole
+  createdAt      DateTime          @default(now())
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([organizationId, userId, role])
+}
+
+model Subprocess {
+  id             String            @id @default(cuid())
+  organizationId String
+  projectId      String
+  name           String
+  order          Int
+  createdAt      DateTime          @default(now())
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  activities     ProcessActivity[]
+
+  @@unique([projectId, order])
+  @@index([organizationId, projectId])
+}
+
+model ProcessActivity {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  subprocessId   String?
+  name           String
+  order          Int
+  status         ReviewStatus @default(proposed)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subprocess     Subprocess?  @relation(fields: [subprocessId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, projectId, order])
+}
+
+model Device {
+  id             String              @id @default(cuid())
+  organizationId String
+  userId         String
+  name           String
+  purpose        DevicePurpose
+  registeredAt   DateTime            @default(now())
+  revokedAt      DateTime?
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attestations   DeviceAttestation[]
+
+  @@index([organizationId, userId, purpose])
+}
+
+model DeviceAttestation {
+  id             String       @id @default(cuid())
+  organizationId String
+  deviceId       String
+  version        String
+  signature      String
+  signedAt       DateTime
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  device         Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, deviceId, expiresAt])
+}
+
+model ByodAgreement {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  version        String
+  signedAt       DateTime
+  expiresAt      DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, userId, expiresAt])
+}
+
+model Interview {
+  id                String                 @id @default(cuid())
+  organizationId    String
+  projectId         String
+  assignedAnalystId String
+  title             String
+  scheduledAt       DateTime?
+  createdAt         DateTime               @default(now())
+  organization      Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project           Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedAnalyst   User                   @relation("AssignedAnalyst", fields: [assignedAnalystId], references: [id])
+  participants      InterviewParticipant[]
+  consentRecords    ConsentRecord[]
+  recordingSessions RecordingSession[]
+  evidence          Evidence[]
+  structuredNotes   StructuredNote[]
+
+  @@index([organizationId, projectId, scheduledAt])
+  @@index([organizationId, assignedAnalystId])
+}
+
+model InterviewParticipant {
+  id             String          @id @default(cuid())
+  organizationId String
+  interviewId    String
+  displayName    String
+  role           String?
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  interview      Interview       @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  consentRecords ConsentRecord[]
+
+  @@index([organizationId, interviewId])
+}
+
+model ConsentRecord {
+  id             String               @id @default(cuid())
+  organizationId String
+  interviewId    String
+  participantId  String
+  purpose        ConsentPurpose
+  noticeVersion  String
+  scope          String
+  method         String
+  evidenceRef    String?
+  deviceTime     DateTime?
+  serverTime     DateTime             @default(now())
+  revokedAt      DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  interview      Interview            @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  participant    InterviewParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, interviewId, participantId, purpose])
+}
+
+model ClientAuthorization {
+  id                    String       @id @default(cuid())
+  organizationId        String
+  projectId             String       @unique
+  allowsPersonalDevices Boolean
+  scopeFlags            Json
+  attachmentRef         String
+  approvedAt            DateTime
+  expiresAt             DateTime?
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project               Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, expiresAt])
+}
+
+model RecordingSession {
+  id             String          @id @default(cuid())
+  organizationId String
+  projectId      String
+  interviewId    String
+  deviceId       String?
+  origin         RecordingOrigin
+  startedAt      DateTime
+  endedAt        DateTime?
+  finalizedAt    DateTime?
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  interview      Interview       @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  gaps           RecordingGap[]
+  evidence       Evidence[]
+
+  @@index([organizationId, projectId, startedAt])
+}
+
+model RecordingGap {
+  id                 String           @id @default(cuid())
+  organizationId     String
+  recordingSessionId String
+  startedAt          DateTime
+  endedAt            DateTime?
+  reason             String
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  recordingSession   RecordingSession @relation(fields: [recordingSessionId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, recordingSessionId, startedAt])
+}
+
+model Evidence {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  projectId          String
+  interviewId        String?
+  recordingSessionId String?
+  phase              EvidencePhase
+  recordingOrigin    RecordingOrigin?
+  derivedFromId      String?
+  storageKey         String
+  fileName           String
+  mediaType          String
+  sizeBytes          BigInt
+  md5                String?
+  uploadedAt         DateTime          @default(now())
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project            Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  interview          Interview?        @relation(fields: [interviewId], references: [id], onDelete: SetNull)
+  recordingSession   RecordingSession? @relation(fields: [recordingSessionId], references: [id], onDelete: SetNull)
+  derivedFrom        Evidence?         @relation("DerivedEvidence", fields: [derivedFromId], references: [id], onDelete: SetNull)
+  derivatives        Evidence[]        @relation("DerivedEvidence")
+
+  @@index([organizationId, projectId, phase])
+  @@index([organizationId, interviewId])
+}
+
+model UploadJob {
+  id             String       @id @default(cuid())
+  organizationId String
+  evidenceId     String?
+  status         String
+  bytesReceived  BigInt       @default(0)
+  expectedBytes  BigInt?
+  md5Expected    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status, createdAt])
+}
+
+model StructuredNote {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  interviewId    String
+  authorUserId   String
+  text           String
+  status         ReviewStatus @default(proposed)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  interview      Interview    @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, projectId, interviewId])
+}
+
+model ProcessDraft {
+  id                String          @id @default(cuid())
+  organizationId    String
+  projectId         String
+  currentRevisionId String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revisions         DraftRevision[] @relation("DraftRevisions")
+
+  @@unique([organizationId, projectId])
+  @@index([organizationId, projectId])
+}
+
+model DraftRevision {
+  id             String       @id @default(cuid())
+  organizationId String
+  draftId        String
+  revisionNumber Int
+  content        Json
+  contentHash    String
+  createdById    String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  draft          ProcessDraft @relation("DraftRevisions", fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, revisionNumber])
+  @@index([organizationId, draftId, createdAt])
+}
+
+model EditLease {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  userId         String
+  resourceType   String
+  resourceId     String
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceType, resourceId])
+  @@index([organizationId, projectId, expiresAt])
+}
+
+model Diagram {
+  id             String            @id @default(cuid())
+  organizationId String
+  projectId      String
+  title          String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  revisions      DiagramRevision[]
+
+  @@index([organizationId, projectId])
+}
+
+model DiagramRevision {
+  id             String          @id @default(cuid())
+  organizationId String
+  diagramId      String
+  revisionNumber Int
+  bpmnXml        String
+  contentHash    String
+  createdAt      DateTime        @default(now())
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  diagram        Diagram         @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  reviews        DiagramReview[]
+
+  @@unique([diagramId, revisionNumber])
+  @@index([organizationId, diagramId, createdAt])
+}
+
+model DiagramReview {
+  id                String          @id @default(cuid())
+  organizationId    String
+  diagramRevisionId String
+  reviewerUserId    String
+  status            ReviewStatus
+  comment           String?
+  createdAt         DateTime        @default(now())
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  diagramRevision   DiagramRevision @relation(fields: [diagramRevisionId], references: [id], onDelete: Cascade)
+  reviewer          User            @relation(fields: [reviewerUserId], references: [id])
+
+  @@index([organizationId, diagramRevisionId, createdAt])
+}
+
+model VerificationRun {
+  id                String       @id @default(cuid())
+  organizationId    String
+  projectId         String
+  diagramRevisionId String?
+  result            Json
+  createdAt         DateTime     @default(now())
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project           Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, projectId, createdAt])
+}
+
+model ApprovalAttachment {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  revisionHash   String
+  evidenceRef    String
+  approvedAt     DateTime
+  expiresAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, projectId, revisionHash])
+}
+
+model AIJob {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  status         String
+  provider       String
+  inputTokens    Int?
+  outputTokens   Int?
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, projectId, createdAt])
+}
+
+model DeletionRequest {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String?
+  requestedById  String
+  reason         String
+  status         String
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, createdAt])
+}
+
+model ExcelTemplate {
+  id             String            @id @default(cuid())
+  organizationId String
+  name           String
+  version        String
+  fileHash       String
+  storageKey     String
+  createdAt      DateTime          @default(now())
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  mappings       TemplateMapping[]
+
+  @@unique([organizationId, name, version])
+  @@index([organizationId, createdAt])
+}
+
+model TemplateMapping {
+  id             String        @id @default(cuid())
+  organizationId String
+  templateId     String
+  sourceField    String
+  sheetName      String
+  cellAddress    String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       ExcelTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, sourceField])
+  @@index([organizationId, templateId])
+}
+
+model InterviewGuide {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  domain         String
+  createdAt      DateTime       @default(now())
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions       GuideVersion[]
+
+  @@index([organizationId, domain])
+}
+
+model GuideVersion {
+  id             String         @id @default(cuid())
+  organizationId String
+  guideId        String
+  version        String
+  content        Json
+  createdAt      DateTime       @default(now())
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  guide          InterviewGuide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, version])
+  @@index([organizationId, guideId])
+}
+
+model AuditEvent {
+  id             String       @id @default(cuid())
+  sequence       BigInt       @unique @default(autoincrement())
+  organizationId String
+  projectId      String?
+  actorUserId    String
+  action         String
+  objectType     String
+  objectId       String
+  revisionId     String?
+  createdAt      DateTime     @default(now())
+  previousHash   String?
+  hash           String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  actor          User         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, projectId, createdAt])
+  @@index([organizationId, sequence])
+}
+
+model UsageEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String?
+  type           String
+  count          Int          @default(1)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, type, createdAt])
+  @@index([organizationId, projectId, createdAt])
+}
+
+model PilotMeasurement {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  metric         String
+  value          Float
+  unit           String
+  measuredAt     DateTime
+  source         String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, projectId, metric, measuredAt])
+}

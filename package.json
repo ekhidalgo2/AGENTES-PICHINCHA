@@ -1,0 +1,52 @@
+{
+  "name": "mapio-by-mhconsultancy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "server:dev": "npm run db:generate && tsx watch server/index.ts",
+    "build": "npm run db:generate && tsc --noEmit && vite build",
+    "test": "npm run db:generate && vitest run",
+    "test:e2e": "playwright test",
+    "lint": "eslint src server tests prisma/seed *.config.js *.config.ts",
+    "typecheck": "npm run db:generate && tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed:organization": "npm run db:generate && tsx prisma/seed/organization.ts",
+    "db:seed:taxonomy": "npm run db:generate && tsx prisma/seed/taxonomy.ts"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^10.3.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^17.2.2",
+    "fastify": "^5.6.1",
+    "pg": "^8.16.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@eslint/js": "^9.36.0",
+    "eslint": "^9.36.0",
+    "prisma": "^7.10.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0",
+    "vite": "^7.1.7",
+    "vitest": "^5.0.5"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "esbuild@0.28.2": true,
+    "prisma@7.10.1": true,
+    "@prisma/engines@7.10.1": true
+  }
+}

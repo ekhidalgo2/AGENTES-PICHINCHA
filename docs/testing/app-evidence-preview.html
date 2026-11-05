@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapio by MHCONSULTANCY | Fuentes del proceso</title>
+  <style>
+    :root {
+      --red: #d71920;
+      --red-dark: #a91319;
+      --coffee: #71331d;
+      --ink: #222321;
+      --muted: #70736f;
+      --line: #d9dcd7;
+      --paper: #f5f6f3;
+      --white: #fff;
+      --soft-red: #fff1f0;
+      --soft-coffee: #f5eee9;
+      --green: #286c4e;
+      --soft-green: #edf5ef;
+      --shadow: 0 14px 38px rgba(31, 35, 32, .07);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 "Myriad Pro", "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 242px minmax(0, 1fr); }
+    aside { background: var(--white); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 22px 17px; }
+    .brand { display: flex; align-items: center; justify-content: center; min-height: 154px; padding: 0 5px 14px; border-bottom: 1px solid var(--line); }
+    .product-logo { display: block; width: 198px; height: 158px; object-fit: contain; background: #fff; }
+    .leaf-strip { height: 32px; margin: 12px 1px 9px; border-radius: 2px; background-image: url("/MOODBOARD%20MHCONSULTANCY.png"); background-size: 836px 470px; background-position: -112px -242px; background-repeat: no-repeat; }
+    .org-label { margin: 18px 10px 8px; color: var(--muted); font: 11px/1.4 Futura, "Century Gothic", sans-serif; letter-spacing: 1.8px; text-transform: uppercase; }
+    nav { display: grid; gap: 5px; }
+    nav a { display: flex; gap: 11px; align-items: center; min-height: 42px; padding: 9px 11px; border-radius: 5px; color: #4b4e4a; text-decoration: none; font-size: 14px; }
+    nav a.active { background: var(--soft-red); color: var(--red-dark); font-weight: 700; }
+    nav a:hover { background: #f4f3f0; }
+    .nav-icon { display: block; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; background-image: url("/Sistema%20iconogr%C3%A1fico%20aplicativo%20final.jpeg"); background-size: 480px 270px; background-repeat: no-repeat; }
+    .nav-icon.home { background-position: -16px -72px; }
+    .nav-icon.folder { background-position: -58px -72px; }
+    .nav-icon.book { background-position: -101px -72px; }
+    .nav-icon.chart { background-position: -142px -72px; }
+    .nav-icon.settings { background-position: -185px -72px; }
+    .nav-icon.document { background-position: -248px -72px; }
+    .nav-icon.people { background-position: -289px -72px; }
+    .nav-icon.flow { background-position: -334px -72px; }
+    .nav-icon.a3 { background-position: -376px -72px; }
+    .nav-icon.review { background-position: -421px -72px; }
+    .side-bottom { margin-top: auto; border-top: 1px solid var(--line); padding: 15px 9px 0; color: var(--muted); font-size: 12px; }
+    .side-bottom strong { color: var(--ink); display: block; font-size: 13px; }
+    main { min-width: 0; }
+    .topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 34px; background: rgba(255,255,255,.92); border-bottom: 1px solid var(--line); }
+    .crumb { color: var(--muted); font-size: 13px; }
+    .crumb b { color: var(--ink); font-weight: 600; }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .sync-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px; border: 1px solid #e7d4c9; border-radius: 3px; background: #fffaf6; color: var(--coffee); font-size: 12px; white-space: nowrap; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #cb8d3f; }
+    .avatar { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%; background: #ece7e1; color: var(--coffee); font-weight: 700; }
+    .content { width: min(1190px, calc(100% - 64px)); margin: 30px auto 55px; animation: enter .35s ease-out; }
+    .eyebrow { color: var(--red); font: 11px/1.4 Futura, "Century Gothic", sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
+    h1, h2, h3 { margin-top: 0; }
+    h1 { margin: 7px 0 5px; font: 700 29px/1.2 Futura, "Century Gothic", sans-serif; letter-spacing: 0; }
+    h2 { margin: 0 0 7px; font: 700 18px/1.3 Futura, "Century Gothic", sans-serif; letter-spacing: 0; }
+    h3 { margin: 0; font-size: 15px; }
+    .lead { margin: 0; color: var(--muted); max-width: 730px; }
+    .project-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+    .project-meta { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 7px 18px; color: var(--muted); font-size: 12px; }
+    .project-meta span { display: inline-flex; align-items: center; gap: 6px; }
+    .status-tag { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #e1cbb9; background: var(--soft-coffee); color: var(--coffee); border-radius: 3px; font-size: 12px; white-space: nowrap; }
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); margin: 26px 0 24px; padding: 0; list-style: none; border-bottom: 1px solid var(--line); }
+    .step { position: relative; display: flex; align-items: center; gap: 10px; padding: 0 8px 13px 0; color: #858983; font-size: 12px; }
+    .step:not(:last-child)::after { content: ""; position: absolute; top: 14px; right: 12px; left: 33px; height: 1px; background: #d9dcd7; z-index: 0; }
+    .step-index { z-index: 1; display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid #cbd0ca; border-radius: 50%; background: var(--paper); font-size: 11px; }
+    .step.done { color: var(--green); }
+    .step.done .step-index { border-color: var(--green); background: var(--soft-green); }
+    .step.current { color: var(--red-dark); font-weight: 700; }
+    .step.current .step-index { border-color: var(--red); background: var(--red); color: #fff; }
+    .columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(275px, .85fr); gap: 22px; align-items: start; }
+    .section { background: var(--white); border: 1px solid var(--line); border-radius: 5px; box-shadow: var(--shadow); }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 19px 21px 15px; border-bottom: 1px solid var(--line); }
+    .section-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .section-body { padding: 20px 21px; }
+    .tabs { display: flex; gap: 22px; overflow-x: auto; border-bottom: 1px solid var(--line); padding: 0 21px; }
+    .tab { position: relative; flex: 0 0 auto; padding: 11px 0 12px; border: 0; background: transparent; color: var(--muted); font-size: 13px; }
+    .tab[aria-selected="true"] { color: var(--red-dark); font-weight: 700; }
+    .tab[aria-selected="true"]::after { content: ""; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--red); }
+    .dropzone { display: grid; place-items: center; min-height: 215px; padding: 26px; border: 1.5px dashed #c5ccc5; border-radius: 4px; background: #fbfcfa; text-align: center; transition: border-color .15s, background .15s; }
+    .dropzone.drag { border-color: var(--red); background: var(--soft-red); }
+    .upload-icon { color: var(--red); margin-bottom: 7px; }
+    .dropzone h3 { margin-bottom: 5px; font-weight: 700; }
+    .dropzone p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 40px; padding: 9px 14px; border: 1px solid var(--red); border-radius: 3px; background: var(--red); color: #fff; font-weight: 700; font-size: 13px; text-decoration: none; }
+    .button:hover { background: var(--red-dark); border-color: var(--red-dark); }
+    .button.secondary { background: #fff; color: var(--ink); border-color: #bdc5bd; }
+    .button.secondary:hover { background: #f7f8f6; }
+    .button.text { padding: 5px 0; min-height: auto; border: 0; color: var(--red-dark); background: transparent; }
+    .button:disabled { opacity: .5; cursor: not-allowed; }
+    input[type="file"] { display: none; }
+    .formats { margin-top: 13px; color: #858983; font-size: 11px; }
+    .checks { display: grid; gap: 10px; margin-top: 18px; padding: 14px; background: #f8f7f4; border-left: 3px solid var(--coffee); }
+    .check { display: flex; align-items: flex-start; gap: 9px; color: #464a45; font-size: 12px; }
+    .check input { margin: 3px 0 0; accent-color: var(--red); }
+    .queue-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 8px; }
+    .queue-count { color: var(--muted); font-size: 12px; }
+    .file-list { border-top: 1px solid var(--line); }
+    .file-row { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid #eaede8; }
+    .file-type { display: grid; place-items: center; width: 34px; height: 38px; border-radius: 3px; background: var(--soft-red); color: var(--red-dark); font: 700 9px/1 Futura, "Century Gothic", sans-serif; }
+    .file-type.audio { color: var(--coffee); background: var(--soft-coffee); }
+    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+    .file-meta { margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .file-state { color: var(--muted); font-size: 11px; text-align: right; white-space: nowrap; }
+    .file-state strong { display: block; color: var(--green); font-weight: 600; }
+    .file-state.pending strong { color: var(--coffee); }
+    .queue-actions { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 15px; }
+    .queue-actions p { margin: 0; color: var(--muted); font-size: 11px; }
+    .source-note { margin-top: 15px; padding: 13px 14px; background: #f8f7f4; border: 1px solid #e8e3dd; color: #52544f; font-size: 12px; }
+    .source-note b { color: var(--coffee); }
+    .summary { padding: 18px 18px 8px; }
+    .summary h2 { margin-bottom: 15px; }
+    .summary-line { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid #eceeea; font-size: 13px; }
+    .summary-line span:first-child { color: var(--muted); }
+    .summary-line strong { text-align: right; font-weight: 600; }
+    .gate { margin: 8px 18px 18px; padding: 13px 14px; border: 1px solid #ead5c7; background: #fff8f2; color: #5d4638; font-size: 12px; }
+    .gate-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--coffee); font-weight: 700; }
+    .gate p { margin: 0; }
+    .start-note { margin-top: 19px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 18px; border: 1px solid #d9ddd7; background: #fff; border-radius: 4px; }
+    .start-note p { margin: 0; color: var(--muted); font-size: 13px; }
+    .start-note strong { display: block; color: var(--ink); margin-bottom: 2px; }
+    .app-footer { min-height: 116px; display: flex; justify-content: flex-end; align-items: center; gap: 14px; padding: 18px 34px; border-top: 1px solid var(--line); background: #fff; }
+    .app-footer span { max-width: 190px; color: var(--muted); font-size: 11px; text-align: right; }
+    .company-logo { display: block; width: 72px; height: 84px; object-fit: contain; background: #fff; }
+    .toast { position: fixed; right: 20px; bottom: 20px; max-width: 340px; padding: 12px 15px; border-radius: 4px; background: var(--ink); color: #fff; box-shadow: var(--shadow); font-size: 13px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 900px) { .app { grid-template-columns: 70px minmax(0, 1fr); } aside { padding: 16px 9px; } .brand { min-height: 58px; padding: 0 0 10px; } .product-logo { width: 52px; height: 44px; } .leaf-strip, .org-label, nav .nav-text, .side-bottom { display: none; } nav { margin-top: 18px; } nav a { justify-content: center; padding: 6px 4px; } .topbar { height: 66px; padding: 0 20px; } .content { width: min(100% - 36px, 900px); } .app-footer { padding: 15px 20px; } }
+    @media (max-width: 700px) { .content { margin-top: 22px; } .columns { grid-template-columns: 1fr; } .steps { grid-template-columns: repeat(2, 1fr); row-gap: 10px; } .step:not(:last-child)::after { display: none; } .project-head { display: block; } .status-tag { margin-top: 12px; } .topbar { height: 54px; padding: 0 15px; } .sync-pill { font-size: 0; padding: 7px; } .sync-pill .dot { margin: 0; } .section-head, .section-body { padding-left: 16px; padding-right: 16px; } .tabs { padding: 0 16px; gap: 16px; } .file-state { white-space: normal; } .start-note { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside aria-label="Navegación principal">
+    <div class="brand">
+      <img class="product-logo" src="/Mapio%20by%20MHCONSULTANCY.jpeg" alt="Mapio by MHCONSULTANCY">
+    </div>
+    <div class="leaf-strip" aria-hidden="true"></div>
+    <div class="org-label">Procesos y transformación</div>
+    <nav>
+      <a href="#" aria-label="Inicio">
+        <span class="nav-icon home" aria-hidden="true"></span><span class="nav-text">Inicio</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon folder" aria-hidden="true"></span><span class="nav-text">Expedientes</span>
+      </a>
+      <a href="#" class="active" aria-current="page">
+        <span class="nav-icon document" aria-hidden="true"></span><span class="nav-text">Fuentes</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon people" aria-hidden="true"></span><span class="nav-text">Entrevistas</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon book" aria-hidden="true"></span><span class="nav-text">Guías</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon flow" aria-hidden="true"></span><span class="nav-text">Diagramas</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon a3" aria-hidden="true"></span><span class="nav-text">A3</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon chart" aria-hidden="true"></span><span class="nav-text">Indicadores</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon settings" aria-hidden="true"></span><span class="nav-text">Configuración</span>
+      </a>
+      <a href="#">
+        <span class="nav-icon review" aria-hidden="true"></span><span class="nav-text">Revisión</span>
+      </a>
+    </nav>
+    <div class="side-bottom"><strong>MHCONSULTANCY</strong>Versión piloto · v1</div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div class="crumb">Expedientes <span aria-hidden="true">/</span> <b>Levantamiento AS-IS</b></div>
+      <div class="top-actions">
+        <span class="sync-pill"><span class="dot"></span> Conectado</span>
+        <div class="avatar" aria-label="Analista María Hernández">MH</div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="project-head">
+        <div>
+          <div class="eyebrow">Expediente · Perfil B</div>
+          <h1>Originación de crédito de consumo</h1>
+          <p class="lead">Registra las fuentes del proceso. Si no hay documentos, puedes empezar con las notas de entrevista.</p>
+          <div class="project-meta">
+            <span><b>Cliente:</b> Cooperativa Horizonte</span>
+            <span><b>Proceso:</b> Crédito de consumo</span>
+            <span><b>Origen:</b> Cliente autorizado</span>
+          </div>
+        </div>
+        <div class="status-tag"><span class="dot"></span> Preparación</div>
+      </div>
+
+      <ol class="steps" aria-label="Etapas del levantamiento">
+        <li class="step current"><span class="step-index">1</span> Fuentes</li>
+        <li class="step"><span class="step-index">2</span> Entrevistas</li>
+        <li class="step"><span class="step-index">3</span> AS-IS y A3</li>
+        <li class="step"><span class="step-index">4</span> Revisión</li>
+      </ol>
+
+      <div class="columns">
+        <section class="section" aria-labelledby="evidence-title">
+          <div class="section-head">
+            <div>
+              <h2 id="evidence-title">Fuentes del proceso</h2>
+              <p>Agrega documentos, transcripciones o grabaciones existentes.</p>
+            </div>
+            <button id="clearQueue" class="button text" type="button" title="Quitar todos los archivos seleccionados">Limpiar</button>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Tipo de evidencia">
+            <button class="tab" role="tab" aria-selected="true" data-kind="document">Documentos</button>
+            <button class="tab" role="tab" aria-selected="false" data-kind="transcript">Transcripciones</button>
+            <button class="tab" role="tab" aria-selected="false" data-kind="audio">Audio y video</button>
+          </div>
+          <div class="section-body">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Seleccionar archivos para agregar como evidencia">
+              <div>
+                <svg class="upload-icon" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg>
+                <h3 id="dropTitle">Arrastra aquí tus documentos</h3>
+                <p id="dropDescription">También puedes elegirlos desde tu equipo.</p>
+                <button id="chooseFiles" class="button" type="button">Seleccionar archivos</button>
+                <div class="formats" id="formats">PDF, DOCX, XLSX · hasta 50 MB por archivo</div>
+                <input id="fileInput" type="file" multiple>
+              </div>
+            </div>
+
+            <div class="checks" id="audioConsent" hidden>
+              <div class="check"><input id="consentRecord" type="checkbox"><label for="consentRecord">Confirmo que existe consentimiento para grabar a todas las personas incluidas.</label></div>
+              <div class="check"><input id="consentTranscription" type="checkbox"><label for="consentTranscription">Confirmo que existe autorización para transcribir localmente esta grabación.</label></div>
+              <div class="check"><input id="consentAi" type="checkbox"><label for="consentAi">Confirmo que existe autorización para procesar el texto con IA (se valida antes del análisis).</label></div>
+              <label for="recordingOrigin" class="sr-only">Origen de grabación</label>
+              <select id="recordingOrigin" aria-label="Origen de la grabación">
+                <option value="">Seleccionar origen de grabación</option>
+                <option value="phone_external">Grabadora del teléfono</option>
+                <option value="other_external">Otra grabadora</option>
+              </select>
+            </div>
+
+            <div class="queue-head"><h3>Archivos seleccionados</h3><span id="queueCount" class="queue-count">0 archivos</span></div>
+            <div id="fileList" class="file-list" aria-live="polite">
+              <div class="file-row" id="emptyRow">
+                <div class="file-type">INFO</div>
+                <div><div class="file-name">Aún no hay archivos</div><div class="file-meta">Las fuentes quedan asociadas a este expediente.</div></div>
+                <div class="file-state">Listo</div>
+              </div>
+            </div>
+            <div class="queue-actions">
+              <p id="uploadNotice">Selecciona evidencias para preparar la carga.</p>
+              <button id="uploadFiles" class="button" type="button" disabled>Subir evidencias</button>
+            </div>
+            <div class="source-note"><b>¿No tienes documentación?</b> Puedes comenzar con la entrevista y construir el proceso desde cero. Los tiempos y frecuencias quedan pendientes hasta que se midan.</div>
+          </div>
+        </section>
+
+        <aside class="section" aria-label="Resumen del expediente">
+          <div class="summary">
+            <h2>Resumen del levantamiento</h2>
+            <div class="summary-line"><span>Proceso</span><strong>Crédito de consumo</strong></div>
+            <div class="summary-line"><span>Subprocesos</span><strong>3 identificados</strong></div>
+            <div class="summary-line"><span>Entrevistas</span><strong>0 de 4 previstas</strong></div>
+            <div class="summary-line"><span>Fuentes cargadas</span><strong id="summaryCount">0</strong></div>
+            <div class="summary-line"><span>Revisión IA</span><strong>Pendiente de aprobación</strong></div>
+          </div>
+          <div class="gate">
+            <div class="gate-title"><span class="dot"></span> Análisis IA no habilitado</div>
+            <p>El procesamiento se activa cuando la organización apruebe el proveedor y los consentimientos requeridos estén vigentes.</p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="start-note">
+        <div><strong>¿Prefieres empezar ahora?</strong><p>Abre la guía de entrevista y registra notas aunque no tengas archivos previos.</p></div>
+        <button class="button secondary" id="startInterview" type="button">Abrir entrevista guiada <span aria-hidden="true">→</span></button>
+      </div>
+    </div>
+    <footer class="app-footer">
+      <span>Mapio · Levantamiento de procesos</span>
+      <img class="company-logo" src="/Logo%20MH.jpeg" alt="MHCONSULTANCY, Consultores & Asesores">
+    </footer>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  const fileInput = document.getElementById("fileInput");
+  const chooseButton = document.getElementById("chooseFiles");
+  const dropzone = document.getElementById("dropzone");
+  const fileList = document.getElementById("fileList");
+  const emptyRow = document.getElementById("emptyRow");
+  const queueCount = document.getElementById("queueCount");
+  const summaryCount = document.getElementById("summaryCount");
+  const uploadButton = document.getElementById("uploadFiles");
+  const uploadNotice = document.getElementById("uploadNotice");
+  const toast = document.getElementById("toast");
+  const tabs = [...document.querySelectorAll(".tab")];
+  const audioConsent = document.getElementById("audioConsent");
+  const recordingOrigin = document.getElementById("recordingOrigin");
+  const consentRecord = document.getElementById("consentRecord");
+  const consentTranscription = document.getElementById("consentTranscription");
+  const consentAi = document.getElementById("consentAi");
+  let activeKind = "document";
+  let files = [];
+  let toastTimer;
+
+  const settings = {
+    document: { accept: ".pdf,.docx,.xlsx", title: "Arrastra aquí tus documentos", description: "También puedes elegirlos desde tu equipo.", formats: "PDF, DOCX, XLSX · hasta 50 MB por archivo" },
+    transcript: { accept: ".txt,.vtt,.docx", title: "Agrega una transcripción existente", description: "Se conservarán hablantes y marcas de tiempo cuando el formato los incluya.", formats: "TXT, VTT, DOCX · hasta 50 MB por archivo" },
+    audio: { accept: ".m4a,.mp3,.wav,.opus,.mp4,.mov,.webm", title: "Agrega una grabación existente", description: "El audio autorizado se transcribe localmente; los videos se asocian como evidencia.", formats: "M4A, MP3, WAV, OPUS, MP4, MOV, WEBM · hasta 1 GB por archivo" }
+  };
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+  }
+
+  function setKind(kind) {
+    activeKind = kind;
+    for (const tab of tabs) tab.setAttribute("aria-selected", String(tab.dataset.kind === kind));
+    const current = settings[kind];
+    fileInput.accept = current.accept;
+    document.getElementById("dropTitle").textContent = current.title;
+    document.getElementById("dropDescription").textContent = current.description;
+    document.getElementById("formats").textContent = current.formats;
+    audioConsent.hidden = kind !== "audio";
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function kindFromFile(file) {
+    const extension = file.name.split(".").pop().toLowerCase();
+    if (file.type.startsWith("video/") || ["mov", "m4v"].includes(extension)) return "video";
+    if (file.type.startsWith("audio/") || ["m4a", "mp3", "wav", "opus"].includes(extension)) return "audio";
+    if (["mp4", "webm"].includes(extension) && activeKind === "audio") return "video";
+    if (["txt", "vtt"].includes(extension)) return "transcript";
+    return activeKind;
+  }
+
+  function addFiles(fileCollection) {
+    const selected = [...fileCollection];
+    if (!selected.length) return;
+    for (const file of selected) {
+      if (file.size > 1024 * 1024 * 1024) {
+        showToast(`${file.name}: supera el límite de 1 GB.`);
+        continue;
+      }
+      const type = kindFromFile(file);
+      if (["audio", "video"].includes(type) && (!consentRecord.checked || !recordingOrigin.value)) {
+        setKind("audio");
+        showToast("Indica el origen y confirma el consentimiento de grabación antes de agregar audio/video.");
+        continue;
+      }
+      files.push({ file, type, id: `${Date.now()}-${Math.random().toString(16).slice(2)}` });
+    }
+    renderFiles();
+    fileInput.value = "";
+  }
+
+  function renderFiles() {
+    emptyRow.hidden = files.length > 0;
+    for (const row of [...fileList.querySelectorAll(".file-row[data-id]")]) row.remove();
+    for (const item of files) {
+      const row = document.createElement("div");
+      row.className = "file-row";
+      row.dataset.id = item.id;
+      const ext = item.file.name.split(".").pop().slice(0, 4).toUpperCase();
+      const type = document.createElement("div");
+      type.className = `file-type${item.type === "audio" ? " audio" : ""}`;
+      type.textContent = ext;
+      const info = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "file-name";
+      name.textContent = item.file.name;
+      const meta = document.createElement("div");
+      meta.className = "file-meta";
+      meta.textContent = `${formatSize(item.file.size)} · ${item.type === "audio" || item.type === "video" ? recordingOrigin.options[recordingOrigin.selectedIndex].text : item.type === "transcript" ? "Transcripción" : "Documento"}`;
+      info.append(name, meta);
+      const state = document.createElement("div");
+      state.className = "file-state pending";
+      const label = document.createElement("strong");
+      label.textContent = item.type === "audio" ? "En cola" : item.type === "video" ? "Evidencia existente" : "Pendiente de carga";
+      const detail = document.createElement("span");
+      detail.textContent = item.type === "audio"
+        ? (consentTranscription.checked ? "Pendiente de transcripción local" : "Transcripción bloqueada: falta autorización")
+        : item.type === "video" ? "Asociado como evidencia; sin transcripción en v1" : "Por cargar";
+      state.append(label, detail);
+      row.append(type, info, state);
+      fileList.appendChild(row);
+    }
+    queueCount.textContent = `${files.length} archivo${files.length === 1 ? "" : "s"}`;
+    summaryCount.textContent = String(files.length);
+    uploadButton.disabled = files.length === 0;
+    uploadButton.textContent = files.length ? `Subir ${files.length} evidencia${files.length === 1 ? "" : "s"}` : "Subir evidencias";
+    uploadNotice.textContent = files.length ? "Los archivos están seleccionados; la carga requiere conexión." : "Selecciona evidencias para preparar la carga.";
+  }
+
+  chooseButton.addEventListener("click", () => fileInput.click());
+  dropzone.addEventListener("click", event => { if (event.target !== chooseButton) fileInput.click(); });
+  dropzone.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInput.click(); } });
+  fileInput.addEventListener("change", event => addFiles(event.target.files));
+  for (const tab of tabs) tab.addEventListener("click", () => setKind(tab.dataset.kind));
+  consentTranscription.addEventListener("change", renderFiles);
+  consentRecord.addEventListener("change", renderFiles);
+  recordingOrigin.addEventListener("change", renderFiles);
+  dropzone.addEventListener("dragover", event => { event.preventDefault(); dropzone.classList.add("drag"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
+  dropzone.addEventListener("drop", event => { event.preventDefault(); dropzone.classList.remove("drag"); addFiles(event.dataTransfer.files); });
+  document.getElementById("clearQueue").addEventListener("click", () => { files = []; renderFiles(); });
+  uploadButton.addEventListener("click", () => {
+    if (!files.length) return;
+    showToast("Vista de concepto: no hay backend conectado; los archivos no se enviaron ni guardaron.");
+  });
+  document.getElementById("startInterview").addEventListener("click", () => showToast("La guía de entrevista se abrirá en el siguiente paso del prototipo."));
+  setKind("document");
+})();
+</script>
+</body>
+</html>
